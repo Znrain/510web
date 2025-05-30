@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
+import { analyzePortfolioByFile } from '../services/ai';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
 
@@ -12,7 +13,7 @@ const Container = styled.div`
   background: linear-gradient(120deg, #181a20 60%, #2b2250 100%);
   display: flex;
   align-items: flex-start;
-  padding: 7rem 2rem 2rem 2rem;
+  padding: 100px 2rem 2rem 2rem;
 `;
 
 const Left = styled.div`
@@ -88,6 +89,7 @@ const PortfolioDetail: React.FC = () => {
   const { state } = location as any;
   const project = state?.project;
   const pdfFile = state?.file; // base64 PDF
+  const fileObj = state?.project?.file; // File 对象
 
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
@@ -96,6 +98,18 @@ const PortfolioDetail: React.FC = () => {
   const [containerWidth, setContainerWidth] = useState(1);
   const [containerHeight, setContainerHeight] = useState(1);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const [aiSuggestion, setAiSuggestion] = useState<string>('AI 正在分析你的作品集...');
+
+  useEffect(() => {
+    if (fileObj) {
+      setAiSuggestion('AI 正在分析你的作品集...');
+      analyzePortfolioByFile(fileObj).then(res => {
+        setAiSuggestion(res.suggestion || '暂无AI建议');
+      }).catch(() => {
+        setAiSuggestion('AI分析失败，请稍后重试');
+      });
+    }
+  }, [fileObj]);
 
   useEffect(() => {
     if (pdfContainerRef.current) {
@@ -171,7 +185,7 @@ const PortfolioDetail: React.FC = () => {
       <Right>
         <SuggestionBox>
           <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 12 }}>AI 建议</div>
-          <div>分析过程中出现错误，请稍后重试</div>
+          <div>{aiSuggestion}</div>
         </SuggestionBox>
         <InputBox>
           <Input placeholder="输入问题..." />

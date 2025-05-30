@@ -44,6 +44,7 @@ You don't have to ever use `eject`. The curated feature set is suitable for smal
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
 # AI-Powered Job Preparation Platform for Designers
 
 ## Project Scope
@@ -113,3 +114,42 @@ Client: Oulu Zhang
 The project is nearly complete. Core features are working end-to-end.
 Client feedback has helped refine UI and improve flow. Final task is to connect
 mock interview logic to actual GPT API and polish file export features.
+
+# DesignPilot – AI-Powered Portfolio & Interview Reviewer
+
+Client Milestone 2 – Final Review Meeting Note
+Project Name: DesignPilot – AI-Powered Portfolio & Interview Reviewer
+Date: May 30, 2025
+Client: Oulu Zhang
+Developer: Xinyu Wang
+GitHub Repo: https://github.com/Znrain/510web
+
+Project Testing Summary
+Features Completed
+Users can upload portfolio PDFs and receive AI-generated suggestions.
+
+Users can upload interview audio files and receive a summary and improvement suggestions.
+
+GPT-4o Mini TTS model is integrated to optimize performance and reduce API costs.
+
+Frontend pages completed for file upload, suggestion display, and overall workflow.
+
+
+No account system or data persistence.
+
+Future feature: mock interview generation module (not yet started).
+
+Goal Check
+The current version fulfills the initial goal: to help users improve their portfolios and interview performance through AI-based feedback. Core features are functional and ready for user testing.
+
+Client Feedback and Requested Changes
+Group suggestions by type: structure, content, language.
+
+Add progress indicators during file analysis.
+
+Add optional rating or comment modules for interview summaries.
+
+Developer has acknowledged the suggestions and will continue refining the interface and output.
+
+Reflection
+The project achieved key goals and implemented two complete, usable features. Some technical limitations exist in speech transcription and PDF formatting consistency, but the overall result is stable and usable. Deployment is the next step for real user testing, followed by potential development of the mock interview module.

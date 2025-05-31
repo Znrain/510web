@@ -40,4 +40,8 @@ async def analyze_audio_api(file: UploadFile = File(...)):
     wav_path = convert_to_wav(tmp_path)
     asr_text = transcribe_audio(wav_path)
     suggestion = analyze_audio_with_gpt(asr_text)
-    return {"asr_text": asr_text, "suggestion": suggestion} 
+    return {"asr_text": asr_text, "suggestion": suggestion}
+
+@app.get("/")
+def read_root():
+    return {"message": "Hello from Railway"} 

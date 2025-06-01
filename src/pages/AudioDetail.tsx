@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { useLocation } from 'react-router-dom';
 import { analyzeAudioByFile } from '../services/ai';
+import { saveAudio, AudioData } from '../utils/storage';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -41,37 +42,94 @@ const SuggestionBox = styled.div`
   font-size: 18px;
 `;
 
-const AudioDetail: React.FC = () => {
-  const location = useLocation() as any;
-  const audioObj = location.state?.audio;
-  const fileObj = audioObj?.file;
+const TranscriptionTitle = styled.div`
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 12px;
+`;
 
-  const [asrText, setAsrText] = useState<string>('AI 正在转写音频...');
-  const [aiSuggestion, setAiSuggestion] = useState<string>('AI 正在分析你的面试内容...');
+const TranscriptionContent = styled.div`
+  line-height: 1.6;
+  white-space: pre-wrap;
+`;
+
+const AudioDetail: React.FC = () => {
+  const location = useLocation();
+  const { state } = location as any;
+  const audio = state?.audio;
+  const fileObj = state?.audio?.fileObj; // File 对象
+  const isHistory = state?.isHistory; // 是否为历史音频
+
+  const [transcription, setTranscription] = useState<string>('');
+  const [aiSuggestion, setAiSuggestion] = useState<string>('');
 
   useEffect(() => {
-    if (fileObj) {
-      setAsrText('AI 正在转写音频...');
-      setAiSuggestion('AI 正在分析你的面试内容...');
-      analyzeAudioByFile(fileObj).then(res => {
-        setAsrText(res.asr_text || '暂无转写结果');
-        setAiSuggestion(res.suggestion || '暂无AI建议');
-      }).catch(() => {
-        setAsrText('音频转写失败，请稍后重试');
-        setAiSuggestion('AI分析失败，请稍后重试');
-      });
+    if (audio) {
+      // 如果是历史音频，直接显示保存的转写和建议
+      if (isHistory || (audio.transcription && audio.transcription !== 'AI is transcribing the audio...' && audio.aiSuggestion && audio.aiSuggestion !== 'AI is analyzing the audio...')) {
+        setTranscription(audio.transcription || 'No transcription available');
+        setAiSuggestion(audio.aiSuggestion || 'No AI suggestions available');
+      } 
+      // 如果是新上传的音频，需要实时分析
+      else if (fileObj) {
+        setTranscription('AI is transcribing the audio...');
+        setAiSuggestion('AI is analyzing the audio...');
+        
+        analyzeAudioByFile(fileObj).then(res => {
+          const newTranscription = res.asr_text || 'Transcription failed';
+          const newSuggestion = res.suggestion || 'No AI suggestions available';
+          
+          setTranscription(newTranscription);
+          setAiSuggestion(newSuggestion);
+          
+          // 更新音频数据并保存
+          const updatedAudio: AudioData = {
+            ...audio,
+            transcription: newTranscription,
+            aiSuggestion: newSuggestion
+          };
+          saveAudio(updatedAudio);
+          
+        }).catch(() => {
+          const errorTranscription = 'Audio transcription failed, please try again later';
+          const errorSuggestion = 'AI analysis failed, please try again later';
+          
+          setTranscription(errorTranscription);
+          setAiSuggestion(errorSuggestion);
+          
+          // 更新音频数据并保存
+          const updatedAudio: AudioData = {
+            ...audio,
+            transcription: errorTranscription,
+            aiSuggestion: errorSuggestion
+          };
+          saveAudio(updatedAudio);
+        });
+      }
+      // 如果既没有保存的内容也没有文件对象，显示默认信息
+      else {
+        setTranscription('No transcription available');
+        setAiSuggestion('No AI suggestions available');
+      }
     }
-  }, [fileObj]);
+  }, [audio, fileObj, isHistory]);
 
   return (
     <Container>
       <Left>
-        <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 12 }}>音频转写文本</div>
-        <div>{asrText}</div>
+        <TranscriptionTitle>Audio Transcription</TranscriptionTitle>
+        <TranscriptionContent>
+          {transcription}
+        </TranscriptionContent>
+        {audio?.fileName && (
+          <div style={{ marginTop: '2rem', fontSize: '14px', opacity: 0.7 }}>
+            File: {audio.fileName}
+          </div>
+        )}
       </Left>
       <Right>
         <SuggestionBox>
-          <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 12 }}>AI 建议</div>
+          <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 12 }}>AI Suggestions</div>
           <div>{aiSuggestion}</div>
         </SuggestionBox>
       </Right>

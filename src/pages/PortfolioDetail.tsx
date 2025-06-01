@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { analyzePortfolioByFile } from '../services/ai';
+import { saveProject, ProjectData } from '../utils/storage';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
 
@@ -55,41 +56,12 @@ const SuggestionBox = styled.div`
   font-size: 18px;
 `;
 
-const InputBox = styled.div`
-  background: rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-`;
-
-const Input = styled.input`
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: #fff;
-  font-size: 16px;
-  outline: none;
-`;
-
-const SendButton = styled.button`
-  background: #8f6fff;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1.5rem;
-  margin-left: 1rem;
-  font-size: 16px;
-  cursor: pointer;
-`;
-
 const PortfolioDetail: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { state } = location as any;
   const project = state?.project;
   const pdfFile = state?.file; // base64 PDF
-  const fileObj = state?.project?.file; // File 对象
+  const fileObj = state?.project?.fileObj; // File 对象
 
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
@@ -98,18 +70,47 @@ const PortfolioDetail: React.FC = () => {
   const [containerWidth, setContainerWidth] = useState(1);
   const [containerHeight, setContainerHeight] = useState(1);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
-  const [aiSuggestion, setAiSuggestion] = useState<string>('AI 正在分析你的作品集...');
+  const [aiSuggestion, setAiSuggestion] = useState<string>('');
 
   useEffect(() => {
-    if (fileObj) {
-      setAiSuggestion('AI 正在分析你的作品集...');
-      analyzePortfolioByFile(fileObj).then(res => {
-        setAiSuggestion(res.suggestion || '暂无AI建议');
-      }).catch(() => {
-        setAiSuggestion('AI分析失败，请稍后重试');
-      });
+    if (project) {
+      // 如果是历史项目，直接显示保存的AI建议
+      if (project.aiSuggestion && project.aiSuggestion !== 'AI is analyzing your portfolio...') {
+        setAiSuggestion(project.aiSuggestion);
+      } 
+      // 如果是新上传的项目，需要实时分析
+      else if (fileObj) {
+        setAiSuggestion('AI is analyzing your portfolio...');
+        
+        analyzePortfolioByFile(fileObj).then(res => {
+          const newSuggestion = res.suggestion || 'No AI suggestions available';
+          setAiSuggestion(newSuggestion);
+          
+          // 更新项目数据并保存
+          const updatedProject: ProjectData = {
+            ...project,
+            aiSuggestion: newSuggestion
+          };
+          saveProject(updatedProject);
+          
+        }).catch(() => {
+          const errorMessage = 'AI analysis failed, please try again later';
+          setAiSuggestion(errorMessage);
+          
+          // 更新项目数据并保存
+          const updatedProject: ProjectData = {
+            ...project,
+            aiSuggestion: errorMessage
+          };
+          saveProject(updatedProject);
+        });
+      }
+      // 如果既没有保存的建议也没有文件对象，显示默认信息
+      else {
+        setAiSuggestion('No AI suggestions available');
+      }
     }
-  }, [fileObj]);
+  }, [project, fileObj]);
 
   useEffect(() => {
     if (pdfContainerRef.current) {
@@ -150,8 +151,8 @@ const PortfolioDetail: React.FC = () => {
             <Document
               file={pdfFile}
               onLoadSuccess={onDocumentLoadSuccess}
-              loading={<div style={{ color: '#fff' }}>正在加载 PDF...</div>}
-              error={<div style={{ color: '#fff' }}>PDF 加载失败</div>}
+              loading={<div style={{ color: '#fff' }}>Loading PDF...</div>}
+              error={<div style={{ color: '#fff' }}>PDF loading failed</div>}
             >
               <Page
                 pageNumber={pageNumber}
@@ -159,38 +160,44 @@ const PortfolioDetail: React.FC = () => {
                 renderAnnotationLayer={true}
                 scale={scale}
                 onLoadSuccess={onPageLoadSuccess}
-                loading={<div style={{ color: '#fff' }}>正在加载页面...</div>}
+                loading={<div style={{ color: '#fff' }}>Loading page...</div>}
               />
               {numPages && numPages > 1 && (
                 <div style={{ marginTop: 16 }}>
                   <button
                     onClick={() => setPageNumber(page => Math.max(page - 1, 1))}
                     disabled={pageNumber <= 1}
-                  >上一页</button>
+                  >Previous</button>
                   <span style={{ margin: '0 12px', color: '#fff' }}>
                     {pageNumber} / {numPages}
                   </span>
                   <button
                     onClick={() => setPageNumber(page => Math.min(page + 1, numPages))}
                     disabled={pageNumber >= numPages}
-                  >下一页</button>
+                  >Next</button>
                 </div>
               )}
             </Document>
           ) : (
-            <div style={{ color: '#fff' }}>请先上传 PDF 文件</div>
+            <div style={{ color: '#fff', textAlign: 'center', padding: '2rem' }}>
+              {project?.fileName ? (
+                <>
+                  <h3>Project File</h3>
+                  <p>PDF file temporarily unavailable</p>
+                  <p style={{ fontSize: '14px', opacity: 0.7 }}>File: {project.fileName}</p>
+                </>
+              ) : (
+                'Please upload a PDF file first'
+              )}
+            </div>
           )}
         </PDFContainer>
       </Left>
       <Right>
         <SuggestionBox>
-          <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 12 }}>AI 建议</div>
+          <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 12 }}>AI Suggestions</div>
           <div>{aiSuggestion}</div>
         </SuggestionBox>
-        <InputBox>
-          <Input placeholder="输入问题..." />
-          <SendButton>发送</SendButton>
-        </InputBox>
       </Right>
     </Container>
   );

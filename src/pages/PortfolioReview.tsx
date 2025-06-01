@@ -1,8 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProjectCard } from '../components/ProjectCard';
 import { ProjectGrid } from '../components/ProjectGrid';
 import styled from '@emotion/styled';
+import { analyzePortfolioByFile } from '../services/ai';
+import { saveProject, getProjects, ProjectData } from '../utils/storage';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -57,41 +59,140 @@ const HiddenInput = styled.input`
 const PortfolioReview = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+
+  // 页面每次显示时都重新加载项目
+  useEffect(() => {
+    const loadProjects = () => {
+      const loadedProjects = getProjects();
+      console.log('加载的项目:', loadedProjects); // 调试信息
+      setProjects(loadedProjects);
+    };
+    
+    loadProjects();
+    
+    // 页面获得焦点时也重新加载（用户从其他页面返回时）
+    const handleFocus = () => {
+      loadProjects();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
-      const newProject = {
-        id: Date.now(),
-        name: file.name.replace('.pdf', ''),
-        file: file,
-        uploadTime: new Date().toISOString(),
-      };
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const fileContent = e.target?.result;
-        navigate('/portfolio-detail', {
-          state: {
-            project: newProject,
-            file: fileContent
+      try {
+        // 生成项目ID和基本信息
+        const projectId = Date.now().toString();
+        const projectName = file.name.replace('.pdf', '');
+        
+        // 读取文件为base64
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const pdfBase64 = e.target?.result as string;
+          
+          // 先跳转到详情页显示PDF和"AI正在分析..."
+          const tempProject = {
+            id: projectId,
+            name: projectName,
+            fileName: file.name,
+            uploadTime: new Date().toISOString(),
+            pdfBase64: pdfBase64,
+            aiSuggestion: 'AI is analyzing your portfolio...',
+            fileObj: file
+          };
+          
+          navigate('/portfolio-detail', {
+            state: {
+              project: tempProject,
+              file: pdfBase64
+            }
+          });
+          
+          // 后台分析并保存结果
+          try {
+            const result = await analyzePortfolioByFile(file);
+            const finalProject: ProjectData = {
+              ...tempProject,
+              aiSuggestion: result.suggestion || 'No AI suggestions available'
+            };
+            
+            // 保存到本地存储
+            saveProject(finalProject);
+            
+            // 更新项目列表
+            setProjects(getProjects());
+          } catch (error) {
+            console.error('AI分析失败:', error);
+            const errorProject: ProjectData = {
+              ...tempProject,
+              aiSuggestion: 'AI analysis failed, please try again later'
+            };
+            saveProject(errorProject);
+            setProjects(getProjects());
           }
-        });
-      };
-      reader.onerror = (error) => {
-        alert('文件读取失败，请重试');
-      };
-      reader.readAsDataURL(file);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        alert('Failed to read file, please try again');
+      }
     } else {
-      alert('请上传 PDF 文件');
+      alert('Please upload a PDF file');
     }
   };
 
-  const handleProjectClick = (project: { name: string; image: string }) => {
-    navigate('/portfolio-detail', { state: { project, image: project.image } });
+  const handleProjectClick = (project: ProjectData) => {
+    console.log('点击项目:', project); // 调试信息
+    if (project.pdfBase64 || (project.aiSuggestion && project.aiSuggestion !== 'AI is analyzing your portfolio...')) {
+      navigate('/portfolio-detail', { 
+        state: { 
+          project: project,
+          file: project.pdfBase64 || null
+        } 
+      });
+    } else {
+      alert('No data available for this project');
+    }
+  };
+
+  // 创建占位项目卡片
+  const getDisplayProjects = () => {
+    const displayProjects = [...projects];
+    
+    // 填充空项目卡片到3个
+    while (displayProjects.length < 3) {
+      displayProjects.push({
+        id: `empty-${displayProjects.length}`,
+        name: `Project ${displayProjects.length + 1}`,
+        fileName: '',
+        uploadTime: '',
+        pdfBase64: '',
+        aiSuggestion: '',
+      });
+    }
+    
+    console.log('显示的项目:', displayProjects.slice(0, 3)); // 调试信息
+    return displayProjects.slice(0, 3);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'No upload yet';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} days ago`;
   };
 
   return (
@@ -112,24 +213,14 @@ const PortfolioReview = () => {
         />
       </UploadSection>
       <ProjectGrid>
-        <ProjectCard
-          image="/images/project1.jpg"
-          title="Project 1"
-          date="Edit 2 hours ago"
-          onClick={() => handleProjectClick({ name: 'Project 1', image: '/images/project1.jpg' })}
-        />
-        <ProjectCard
-          image="/images/project2.jpg"
-          title="Project 2"
-          date="Edit 2 hours ago"
-          onClick={() => handleProjectClick({ name: 'Project 2', image: '/images/project2.jpg' })}
-        />
-        <ProjectCard
-          image="/images/project3.jpg"
-          title="Project 3"
-          date="Edit 2 hours ago"
-          onClick={() => handleProjectClick({ name: 'Project 3', image: '/images/project3.jpg' })}
-        />
+        {getDisplayProjects().map((project, index) => (
+          <ProjectCard
+            key={project.id}
+            title={project.name}
+            date={formatDate(project.uploadTime)}
+            onClick={() => handleProjectClick(project)}
+          />
+        ))}
       </ProjectGrid>
     </PageContainer>
   );

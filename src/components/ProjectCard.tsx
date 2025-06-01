@@ -7,25 +7,25 @@ export const ProjectCardContainer = styled.div`
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.2s;
+  padding: 2rem;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   &:hover {
     transform: translateY(-4px);
   }
 `;
 
-export const ProjectImage = styled.img`
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-`;
-
 export const ProjectInfo = styled.div`
-  padding: 1.5rem;
+  text-align: center;
 `;
 
 export const ProjectTitle = styled.h4`
   font-family: 'Inter', sans-serif;
   font-size: 18px;
   margin-bottom: 0.5rem;
+  color: #ffffff;
 `;
 
 export const ProjectDate = styled.span`
@@ -35,16 +35,14 @@ export const ProjectDate = styled.span`
 `;
 
 interface ProjectCardProps {
-  image: string;
   title: string;
   date: string;
   onClick?: () => void;
   children?: React.ReactNode;
 }
 
-export const ProjectCard: React.FC<ProjectCardProps> = ({ image, title, date, onClick, children }) => (
+export const ProjectCard: React.FC<ProjectCardProps> = ({ title, date, onClick, children }) => (
   <ProjectCardContainer onClick={onClick}>
-    <ProjectImage src={image} alt={title} />
     <ProjectInfo>
       <ProjectTitle>{title}</ProjectTitle>
       <ProjectDate>{date}</ProjectDate>

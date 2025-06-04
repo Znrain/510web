@@ -153,3 +153,32 @@ Developer has acknowledged the suggestions and will continue refining the interf
 
 Reflection
 The project achieved key goals and implemented two complete, usable features. Some technical limitations exist in speech transcription and PDF formatting consistency, but the overall result is stable and usable. Deployment is the next step for real user testing, followed by potential development of the mock interview module.
+
+# Vercel 部署指南
+
+本项目支持一键部署到 [Vercel](https://vercel.com/)，实现前后端一体化托管。
+
+## 目录结构
+
+- `src/` 前端 React/TypeScript 代码
+- `backend/` FastAPI 后端代码
+- `api/`（如需 Serverless Function，可将后端迁移至此）
+
+## 环境变量
+
+1. 在 Vercel 控制台为项目添加所需环境变量（如 `OPENAI_API_KEY` 等）。
+2. 本地开发可在 `.env` 文件中配置，**不要将敏感信息上传到 GitHub**。
+
+## 部署流程
+
+1. 推送代码到 GitHub。
+2. 登录 Vercel，导入你的 GitHub 仓库。
+3. 选择前端（如 `src/`）为主部署目录，或根目录（如有 Next.js/Monorepo）。
+4. 如需后端 API，参考 Vercel [Serverless Functions](https://vercel.com/docs/functions) 文档，将 FastAPI 代码迁移到 `api/` 目录下（或用 Node.js/TS 实现）。
+5. 在 Vercel 控制台设置好环境变量。
+6. 部署完成后，Vercel 会自动分配域名，前端可通过 `/api/xxx` 访问后端接口。
+
+## 注意事项
+
+- Vercel Serverless Functions 对 Python 支持有限，复杂后端建议用 Render/Railway 部署，前端用 Vercel。
+- 如遇依赖或冷启动问题，请查阅 Vercel 官方文档或社区。

@@ -212,7 +212,7 @@ const PortfolioReview = () => {
           onChange={handleFileChange}
         />
       </UploadSection>
-      <ProjectGrid>
+    <ProjectGrid>
         {getDisplayProjects().map((project, index) => (
           <ProjectCard
             key={project.id}
@@ -221,7 +221,7 @@ const PortfolioReview = () => {
             onClick={() => handleProjectClick(project)}
           />
         ))}
-      </ProjectGrid>
+    </ProjectGrid>
     </PageContainer>
   );
 };

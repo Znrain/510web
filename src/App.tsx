@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
-import { Global, css } from '@emotion/react';
 import { motion } from 'framer-motion';
 import PortfolioReview from './pages/PortfolioReview';
 import PortfolioDetail from './pages/PortfolioDetail';
@@ -62,16 +61,6 @@ const TopBarContainer = styled.div`
   z-index: 10;
 `;
 
-const TopBar = styled.div`
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  height: 56px;
-  display: flex;
-  align-items: center;
-  padding: 0 2rem;
-  border-radius: 16px;
-`;
-
 const Content = styled.div`
   position: relative;
   z-index: 1;
@@ -79,55 +68,6 @@ const Content = styled.div`
   margin: 0 auto;
   padding: 0 4rem;
   padding-bottom: 8rem;
-`;
-
-const LogoWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-  width: fit-content;
-`;
-
-const LogoText = styled.h1`
-  font-family: 'Inter', sans-serif;
-  font-size: 48px;
-  font-weight: 600;
-  margin: 0;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  width: 100%;
-  transform: scaleX(1.2);
-  transform-origin: left;
-`;
-
-const LogoSubtext = styled.span`
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  opacity: 0.9;
-  margin-top: -2px;
-  width: 100%;
-  text-align: left;
-`;
-
-const Nav = styled.nav`
-  display: flex;
-  gap: 2rem;
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  align-items: center;
-`;
-
-const SignInButton = styled(motion.button)`
-  background: #FFFFFF;
-  color: #000000;
-  border: none;
-  border-radius: 12px;
-  padding: 8px 24px;
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
 `;
 
 const Section = styled.section`
@@ -328,15 +268,7 @@ const NavLinks = styled.div`
   align-items: center;
 `;
 
-const TabDecor = styled.span`
-  display: inline-block;
-  width: 32px;
-  height: 16px;
-  margin-left: 12px;
-  background: rgba(40,40,40,0.8);
-  border-radius: 8px;
-  vertical-align: middle;
-`;
+
 
 const NavBarBg = styled.div`
   background: rgba(255, 255, 255, 0.1);

@@ -7,7 +7,7 @@ interface AIAnalysisResponse {
 
 export const analyzePortfolio = async (pdfContent: string): Promise<AIAnalysisResponse> => {
   try {
-    const response = await axios.post('http://localhost:8010/api/analyze-portfolio', {
+    const response = await axios.post('https://510web-production.up.railway.app/api/analyze-portfolio', {
       content: pdfContent
     }, {
       headers: {
@@ -28,7 +28,7 @@ export const analyzePortfolio = async (pdfContent: string): Promise<AIAnalysisRe
 export const analyzePortfolioByFile = async (file: File): Promise<{ suggestion: string, file_path: string, file_name: string }> => {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await axios.post('http://localhost:8010/api/analyze-portfolio', formData, {
+  const response = await axios.post('https://510web-production.up.railway.app/api/analyze-portfolio', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

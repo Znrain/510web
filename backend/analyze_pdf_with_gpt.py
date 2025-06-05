@@ -19,20 +19,25 @@ def analyze_portfolio(text):
     try:
         print("Starting OpenAI API call...")
         
-        # 最简单的客户端创建方式
-        client = OpenAI()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            # 返回错误信息而不是抛出异常，避免中断流程
+            return "OPENAI_API_KEY environment variable not set"
+
+        # 明确禁用代理，并还原其他参数
+        client = OpenAI(api_key=api_key, http_client=None) 
         
-        # 限制文本长度
         limited_text = text[:3000] if len(text) > 3000 else text
         print(f"Sending text to OpenAI (length: {len(limited_text)})")
         
-        # 最基础的 API 调用
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a UX design mentor. Please provide constructive feedback and suggestions for the following portfolio. IMPORTANT: Your response must be in English only, regardless of the language used in the input text."},
                 {"role": "user", "content": f"Please review this portfolio and provide feedback in English: {limited_text}"}
-            ]
+            ],
+            max_tokens=1000, # 还原 token 限制
+            temperature=0.7  # 还原 temperature
         )
         
         result = response.choices[0].message.content
@@ -41,15 +46,11 @@ def analyze_portfolio(text):
         
     except Exception as e:
         print(f"Error in OpenAI API call: {str(e)}")
-        # 返回简单错误信息
-        if "api_key" in str(e).lower():
-            return "OpenAI API key is invalid or missing"
-        elif "rate_limit" in str(e).lower():
-            return "OpenAI API rate limit exceeded, please try again later"
-        elif "quota" in str(e).lower():
-            return "OpenAI API quota exceeded"
-        else:
-            return f"AI analysis temporarily unavailable: {str(e)}"
+        error_message = f"AI analysis failed: {str(e)}"
+        # 特殊处理 proxies 错误
+        if "proxies" in str(e):
+            error_message = "AI analysis failed due to a proxy configuration issue. Please contact support."
+        return error_message
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

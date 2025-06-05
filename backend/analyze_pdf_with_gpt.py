@@ -21,11 +21,10 @@ def analyze_portfolio(text):
         
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            # 返回错误信息而不是抛出异常，避免中断流程
             return "OPENAI_API_KEY environment variable not set"
 
-        # 明确禁用代理，并还原其他参数
-        client = OpenAI(api_key=api_key, http_client=None) 
+        # 最原始的 OpenAI 客户端调用，无任何额外参数
+        client = OpenAI(api_key=api_key)
         
         limited_text = text[:3000] if len(text) > 3000 else text
         print(f"Sending text to OpenAI (length: {len(limited_text)})")
@@ -35,9 +34,7 @@ def analyze_portfolio(text):
             messages=[
                 {"role": "system", "content": "You are a UX design mentor. Please provide constructive feedback and suggestions for the following portfolio. IMPORTANT: Your response must be in English only, regardless of the language used in the input text."},
                 {"role": "user", "content": f"Please review this portfolio and provide feedback in English: {limited_text}"}
-            ],
-            max_tokens=1000, # 还原 token 限制
-            temperature=0.7  # 还原 temperature
+            ]
         )
         
         result = response.choices[0].message.content
@@ -46,11 +43,7 @@ def analyze_portfolio(text):
         
     except Exception as e:
         print(f"Error in OpenAI API call: {str(e)}")
-        error_message = f"AI analysis failed: {str(e)}"
-        # 特殊处理 proxies 错误
-        if "proxies" in str(e):
-            error_message = "AI analysis failed due to a proxy configuration issue. Please contact support."
-        return error_message
+        return f"AI analysis failed: {str(e)}"
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

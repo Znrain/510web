@@ -19,44 +19,37 @@ def analyze_portfolio(text):
     try:
         print("Starting OpenAI API call...")
         
-        # 检查 API key
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise Exception("OPENAI_API_KEY environment variable not set")
+        # 最简单的客户端创建方式
+        client = OpenAI()
         
-        client = OpenAI(api_key=api_key)
-        
-        # 限制文本长度避免 token 超限
+        # 限制文本长度
         limited_text = text[:3000] if len(text) > 3000 else text
         print(f"Sending text to OpenAI (length: {len(limited_text)})")
         
-        res = client.chat.completions.create(
+        # 最基础的 API 调用
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a UX design mentor. Please provide constructive feedback and suggestions for the following portfolio. IMPORTANT: Your response must be in English only, regardless of the language used in the input text."},
                 {"role": "user", "content": f"Please review this portfolio and provide feedback in English: {limited_text}"}
-            ],
-            max_tokens=1000,
-            temperature=0.7
+            ]
         )
         
-        result = res.choices[0].message.content
+        result = response.choices[0].message.content
         print("OpenAI API call successful")
         return result
         
     except Exception as e:
         print(f"Error in OpenAI API call: {str(e)}")
-        print(f"Error type: {type(e).__name__}")
-        
-        # 根据错误类型提供更友好的错误信息
+        # 返回简单错误信息
         if "api_key" in str(e).lower():
-            raise Exception("OpenAI API key is invalid or missing")
+            return "OpenAI API key is invalid or missing"
         elif "rate_limit" in str(e).lower():
-            raise Exception("OpenAI API rate limit exceeded, please try again later")
+            return "OpenAI API rate limit exceeded, please try again later"
         elif "quota" in str(e).lower():
-            raise Exception("OpenAI API quota exceeded")
+            return "OpenAI API quota exceeded"
         else:
-            raise Exception(f"OpenAI API call failed: {str(e)}")
+            return f"AI analysis temporarily unavailable: {str(e)}"
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
